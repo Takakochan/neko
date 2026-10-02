@@ -1,6 +1,9 @@
 .venv/
 __pycache__/
 *.pyc
-data/
 *.pt
 .DS_Store
+
+# 動画は大きいので入れない（共有フォルダで渡す）
+data/videos/
+*.mp4
