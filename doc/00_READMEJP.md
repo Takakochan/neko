@@ -137,3 +137,7 @@ def disconnect() -> None: ...
 - ノートPC内蔵カメラ／スマホをカメラとして使ってよいか（「持ち込みセンサー」扱いにならないか）
 - 事前に書いた猫じゃらしコードを使ってよいか
 - 猫じゃらし本体（おもちゃ）の持ち込みは可か
+
+
+cat videos
+https://drive.google.com/drive/folders/1ddTBBlvya5GX-K7VwuDmari4Vkc1ep1L?usp=sharing

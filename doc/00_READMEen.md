@@ -137,3 +137,7 @@ def disconnect() -> None: ...
 - Can we use a laptop's built-in camera or a phone as the camera (i.e. it doesn't count as "bringing your own sensors")?
 - Can we use teaser code written before the event?
 - Can we bring the teaser toy itself?
+
+
+Cat videos
+https://drive.google.com/drive/folders/1ddTBBlvya5GX-K7VwuDmari4Vkc1ep1L?usp=sharing
