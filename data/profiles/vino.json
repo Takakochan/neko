@@ -1,0 +1,19 @@
+{
+  "cat_name": "vino",
+  "type": "hunter",
+  "reason": "hunter score 1.00 (Speed + Pounces vs best in group)",
+  "sessions": 1,
+  "features": {
+    "reaction_latency_s": null,
+    "max_speed_px_s": 1431.8,
+    "pounce_rate_per_min": 10.22,
+    "mean_distance_to_teaser_px": null,
+    "engagement_half_life_s": 70.0
+  },
+  "mode_prior": {
+    "bird": 0.5,
+    "mouse": 0.2,
+    "peek": 0.1,
+    "tease": 0.2
+  }
+}

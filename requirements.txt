@@ -1,3 +1,4 @@
 # requirements.txt
 -r requirements/vision.txt
 -r requirements/arm.txt
+matplotlib
