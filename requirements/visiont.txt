@@ -1,0 +1,4 @@
+# requirements/vision.txt
+-r base.txt
+opencv-python==5.0.0.93
+ultralytics==8.4.171

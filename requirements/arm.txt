@@ -1,0 +1,3 @@
+# requirements/arm.txt
+-r base.txt
+pyserial==3.5

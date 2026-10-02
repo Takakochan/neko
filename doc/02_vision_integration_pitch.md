@@ -1,3 +1,6 @@
+動作確認済み：Linux（CPU）、torch 2.14.1+cpu。
+Intel Mac で `import torch` がエラーになる場合は `pip install "numpy<2"`。
+
 # Vision, Integration, Learning Logic & Pitch (Takako) — Detailed Steps
 
 Your goals:
