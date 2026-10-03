@@ -74,7 +74,7 @@ These are the places where someone waits on someone else. If one slips, everythi
 
 | Role | Person | Detailed steps |
 |---|---|---|
-| Arm control | (name) | `01_arm.md` (running it on an M4 Mac: `04_so101_m4.md`, Japanese) |
+| Arm control | (name) | `01_arm.md` (running it on an M4 Mac: `04_so101_m4_en.md`) |
 | Vision, integration, learning logic, pitch | Takako | `02_vision_integration_pitch.md` |
 | Product & market research | (name) | `03_product_market.md` |
 
