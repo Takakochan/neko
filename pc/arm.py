@@ -123,11 +123,16 @@ SO101_JOINTS = ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wr
 SO101_CALIB_FILE = Path(__file__).with_name("so101_calib.json")
 TICKS_PER_DEG = 4096 / 360
 
-# STS3215 のレジスタ（アドレス）
+# STS3215 のレジスタ（アドレス）。9〜31 は電源を切っても残る EEPROM
+ADDR_MIN_LIMIT = 9
+ADDR_MAX_LIMIT = 11
+ADDR_HOMING_OFFSET = 31
 ADDR_TORQUE = 40
 ADDR_GOAL_POS = 42
 ADDR_GOAL_SPEED = 46
+ADDR_LOCK = 55
 ADDR_PRESENT_POS = 56
+HALF_TURN = 2047  # 補正後、関節の真ん中がこの値になる（LeRobot と同じ）
 
 
 def find_so101_port():
@@ -145,6 +150,12 @@ def find_so101_port():
 def _decode_pos(v):
     # STS3215 は 15 ビット目が符号
     return -(v & 0x7FFF) if v & 0x8000 else v
+
+
+def _encode_offset(v):
+    # 補正値は 11 ビット目が符号
+    v = max(-2047, min(2047, int(v)))
+    return (-v) | 0x800 if v < 0 else v
 
 
 class SO101Arm(ArmBackend):
@@ -248,6 +259,40 @@ class SO101Arm(ArmBackend):
     def set_speed(self, deg_per_sec):
         """動く速さ（度/秒）。0 で最速。"""
         self._sync_write(ADDR_GOAL_SPEED, 2, [int(deg_per_sec * TICKS_PER_DEG)] * len(self.ids))
+
+    # --- キャリブレーション（サーボの EEPROM に書く。電源を切っても残る）---
+    def _write_eeprom(self, addr, size, values):
+        """脱力してロックを外してから 1 個ずつ書き、最後にロックし直す。"""
+        scs = self.scs
+        self.relax()
+        for i, v in zip(self.ids, values):
+            self.ph.write1ByteTxRx(self.port, i, ADDR_LOCK, 0)
+            write = self.ph.write2ByteTxRx if size == 2 else self.ph.write1ByteTxRx
+            res, err = write(self.port, i, addr, v)
+            if res != scs.COMM_SUCCESS or err:
+                raise RuntimeError(f"サーボ {i} のアドレス {addr} に書き込めません")
+            self.ph.write1ByteTxRx(self.port, i, ADDR_LOCK, 1)
+
+    def reset_calibration(self):
+        """補正値 0、動ける範囲 0〜4095 に戻す。"""
+        self._write_eeprom(ADDR_HOMING_OFFSET, 2, [0] * len(self.ids))
+        self._write_eeprom(ADDR_MIN_LIMIT, 2, [0] * len(self.ids))
+        self._write_eeprom(ADDR_MAX_LIMIT, 2, [4095] * len(self.ids))
+
+    def write_homing_offsets(self):
+        """今の姿勢が各関節の真ん中（値 2047）になるよう補正値を書く。LeRobot の calibrate と同じ。
+
+        reset_calibration() のあとに、腕を動ける範囲の真ん中にしてから呼ぶ。
+        真ん中が 2047 になるので、動かしても値が 0/4095 をまたがない。
+        """
+        offsets = [t - HALF_TURN for t in self.read_ticks()]
+        self._write_eeprom(ADDR_HOMING_OFFSET, 2, [_encode_offset(o) for o in offsets])
+        return offsets
+
+    def write_limits(self, lo_ticks, hi_ticks):
+        """サーボ自身が動ける範囲を書く（範囲外の指令はサーボが受け付けない）。"""
+        self._write_eeprom(ADDR_MIN_LIMIT, 2, [max(0, int(v)) for v in lo_ticks])
+        self._write_eeprom(ADDR_MAX_LIMIT, 2, [min(4095, int(v)) for v in hi_ticks])
 
 
 def open_arm(kind="sg90", port=None):

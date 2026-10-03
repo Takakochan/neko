@@ -1,0 +1,8 @@
+# requirements/lerobot.txt
+# Apple Silicon (M1-M4) Mac only: LeRobot needs a newer PyTorch than Intel Macs can install.
+#   uv pip install -r requirements/lerobot.txt
+#   uv pip install --reinstall opencv-python==5.0.0.93
+# The second line is needed because LeRobot pulls in opencv-python-headless, which
+# overwrites cv2 without GUI support (cv2.imshow in record_grid.py would fail).
+-r ../requirements.txt
+lerobot[feetech]

@@ -3,6 +3,11 @@
 使い方:
   python so101_check.py watch      今の角度を表示し続ける（脱力して手で動かすと値が変わる）
   python so101_check.py calib      中央・動ける範囲・待機姿勢を記録して so101_calib.json に保存
+                                   補正値と範囲はサーボにも書き込む（LeRobot の calibrate と同じ。
+                                   アームごとに一度でよく、電源を切っても残る）
+  python so101_check.py calib --no-offset
+                                   サーボには書き込まず、so101_calib.json だけ作る
+                                   （M4 Mac などで lerobot-calibrate 済みのアーム用）
   python so101_check.py manual     角度を手入力して動かす（例: 90,80,100,90,90,90）
   オプション: --port /dev/cu.usbmodemXXXX でポート指定（省略すると自動で探す）
 非常停止はアームの電源を抜く（Ctrl+C は PC 側を止めるだけ）。
@@ -35,16 +40,27 @@ def watch(arm, until_enter=False):
         time.sleep(0.1)
 
 
-def calib(arm):
+def calib(arm, write_offsets=True):
     arm.relax()
-    print("アームを脱力しました。")
+    print("アームを脱力しました。腕を手で支えてください。")
+    if write_offsets:
+        arm.reset_calibration()
     input("1) 各関節を動ける範囲の真ん中にして、Enter > ")
+    offsets = None
+    if write_offsets:
+        offsets = arm.write_homing_offsets()
+        print("補正値をサーボに書き込みました:", offsets)
     center = arm.read_ticks()
     print("2) 各関節を 1 つずつ、端から端までゆっくり動かしてください。終わったら Enter")
     lo, hi = watch(arm, until_enter=True)
-    for name, l, h in zip(SO101_JOINTS, lo, hi):
-        if h - l > 3500:
-            print(f"注意: {name} の値が 0/4095 をまたいだ可能性があります。範囲を確認してください。")
+    full = [h - l > 3500 for l, h in zip(lo, hi)]  # 一回転する関節（wrist_roll など）
+    for name, f in zip(SO101_JOINTS, full):
+        if f:
+            print(f"{name} はほぼ一回転したので、範囲の制限なしにします")
+    if write_offsets:
+        arm.write_limits([0 if f else l for l, f in zip(lo, full)],
+                         [4095 if f else h for h, f in zip(hi, full)])
+        print("動ける範囲をサーボに書き込みました")
     input("3) 待機姿勢（猫に当たらない、たたんだ姿勢）にして、Enter > ")
     home_ticks = arm.read_ticks()
 
@@ -54,9 +70,10 @@ def calib(arm):
     data = {
         "center": center,
         "sign": [1] * len(center),
-        "lo": [deg(i, t) + MARGIN_DEG for i, t in enumerate(lo)],
-        "hi": [deg(i, t) - MARGIN_DEG for i, t in enumerate(hi)],
+        "lo": [deg(i, 0 if f else t) + (0 if f else MARGIN_DEG) for i, (t, f) in enumerate(zip(lo, full))],
+        "hi": [deg(i, 4095 if f else t) - (0 if f else MARGIN_DEG) for i, (t, f) in enumerate(zip(hi, full))],
         "home": [deg(i, t) for i, t in enumerate(home_ticks)],
+        "homing_offset": offsets,
     }
     SO101_CALIB_FILE.write_text(json.dumps(data, indent=2))
     print(f"保存しました: {SO101_CALIB_FILE}")
@@ -86,6 +103,7 @@ def main():
     p.add_argument("mode", choices=["watch", "calib", "manual"])
     p.add_argument("--port")
     p.add_argument("--speed", type=float, default=30, help="動く速さ（度/秒）")
+    p.add_argument("--no-offset", action="store_true", help="calib でサーボに補正値を書き込まない")
     args = p.parse_args()
 
     with SO101Arm(port=args.port, speed=args.speed) as arm:
@@ -95,7 +113,7 @@ def main():
                 print("Ctrl+C で終了")
                 watch(arm)
             elif args.mode == "calib":
-                calib(arm)
+                calib(arm, write_offsets=not args.no_offset)
             else:
                 manual(arm)
         except KeyboardInterrupt:
