@@ -74,7 +74,7 @@ flowchart TD
 
 | 担当 | 人 | 詳細手順 |
 |---|---|---|
-| アーム制御 | （名前） | `01_arm.md` |
+| アーム制御 | （名前） | `01_arm.md`（M4 Mac で動かす手順：`04_so101_m4.md`） |
 | ビジョン・統合・学習ロジック・ピッチ | Takako | `02_vision_integration_pitch.md` |
 | プロダクト・市場リサーチ | （名前） | `03_product_market.md` |
 
